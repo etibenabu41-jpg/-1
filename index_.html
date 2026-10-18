@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1d5c57">
+<title>מילון עברית בארבע שפות</title>
+<style>
+:root{--ink:#1c2d2a;--muted:#53645f;--paper:#f4f8f5;--card:#fff;--accent:#1d5c57;--line:#dbe7e0;--soft:#edf5f0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:Arial,"Noto Sans Hebrew",sans-serif;line-height:1.45}
+header{background:var(--accent);color:#fff;padding:22px 16px 18px;text-align:center}
+h1{font-size:1.55rem;margin:0 0 6px}
+header p{margin:0;font-size:.98rem}
+main{max-width:1000px;margin:auto;padding:14px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+input{font:inherit;padding:12px;border:1px solid #b7cbc1;border-radius:12px;flex:1;min-width:180px;background:#fff}
+button{font:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid #d79d31;outline-offset:2px}
+.toolbutton{border:0;border-radius:12px;padding:12px 14px;background:#e0eee7;color:#173f39;font-weight:bold}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.word-card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 2px 6px #153b3010;min-width:0}
+.picture{display:flex;width:100%;min-height:112px;align-items:center;justify-content:center;flex-direction:column;gap:4px;border:0;border-bottom:1px solid var(--line);background:var(--soft);color:var(--accent);padding:10px}
+.picture:hover{background:#e2f0e8}
+.emoji{font-size:3rem;line-height:1.2}.illustration{display:block;width:100%;max-width:180px;height:112px;object-fit:contain}.picture{min-height:145px}
+.speaker{font-size:.78rem;font-weight:bold}
+.translations{padding:10px}
+.hebrew{font-size:1.35rem;font-weight:bold;text-align:center;color:#174f49;margin:0 0 8px}
+.translations>div:not(.hebrew){display:flex;flex-direction:column;margin-top:7px;overflow-wrap:anywhere;font-size:.95rem}
+.lang{font-size:.68rem;color:var(--muted);font-weight:bold;letter-spacing:.03em}
+.note{font-size:.86rem;color:var(--muted);margin:12px 2px}
+.status{font-size:.92rem;padding:9px 12px;border-radius:10px;background:#e8f2ec;color:#173f39;margin:0 0 12px;min-height:1em}
+.status:empty{display:none}
+footer{text-align:center;color:var(--muted);padding:16px;font-size:.8rem}
+@media(min-width:680px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}header{padding:28px}}
+@media(min-width:950px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header>
+  <h1>מִלּוֹן עִבְרִית בְּאַרְבַּע שָׂפוֹת</h1>
+  <p>לוחצים על התמונה או על כפתור השמע ושומעים את המילה בעברית 🔊</p>
+</header>
+<main>
+  <div class="tools">
+    <input id="search" type="search" placeholder="חיפוש מילה בעברית או בשפה אחרת…" aria-label="חיפוש מילה">
+    <button class="toolbutton" id="test-sound" type="button">🔊 בדיקת שמע — שלום</button>
+  </div>
+  <p id="sound-status" class="status" role="status" aria-live="polite"></p>
+  <section class="grid" id="words" aria-label="מילות המילון"></section>
+  <p class="note">השמע משתמש בקול עברי הזמין במכשיר או בדפדפן. במילים תייר, רחוב, נשוי, רווק, גרוש ואלמן מופיעים איורים חדשים וברורים. אם לא שומעים, ודאו שהצליל במכשיר פועל ופתחו את הקישור בדפדפן מעודכן. יש ללחוץ על כפתור השמע כדי להתחיל לנגן.</p>
+</main>
+<footer>מילון לימודי לעברית, אנגלית, ספרדית ורוסית</footer>
+<script>
+'use strict';
+const words = [
+  {he:'חָבֵר', say:'חבר', en:'Friend', es:'Amigo', ru:'Друг', icon:'🤝'},
+  {he:'מוֹרֶה', say:'מורה', en:'Teacher', es:'Profesor', ru:'Учитель', icon:'👨‍🏫'},
+  {he:'תַּיָּר', say:'תייר', en:'Tourist', es:'Turista', ru:'Турист', icon:'🧳', key:'tourist'},
+  {he:'תַּלְמִיד', say:'תלמיד', en:'Student', es:'Estudiante', ru:'Ученик', icon:'🎒'},
+  {he:'בַּיִת', say:'בית', en:'House / home', es:'Casa', ru:'Дом', icon:'🏠'},
+  {he:'דִּירָה', say:'דירה', en:'Apartment', es:'Apartamento', ru:'Квартира', icon:'🏢'},
+  {he:'רְחוֹב', say:'רחוב', en:'Street', es:'Calle', ru:'Улица', icon:'🛣️', key:'street'},
+  {he:'מַחְבֶּרֶת', say:'מחברת', en:'Notebook', es:'Cuaderno', ru:'Тетрадь', icon:'📓'},
+  {he:'סֵפֶר', say:'ספר', en:'Book', es:'Libro', ru:'Книга', icon:'📘'},
+  {he:'סִפּוּר', say:'סיפור', en:'Story', es:'Historia / cuento', ru:'Рассказ', icon:'📖'},
+  {he:'עִיתּוֹן', say:'עיתון', en:'Newspaper', es:'Periódico', ru:'Газета', icon:'📰'},
+  {he:'שְׁאֵלָה', say:'שאלה', en:'Question', es:'Pregunta', ru:'Вопрос', icon:'❓'},
+  {he:'תְּשׁוּבָה', say:'תשובה', en:'Answer', es:'Respuesta', ru:'Ответ', icon:'💬'},
+  {he:'כְּתוֹבֶת', say:'כתובת', en:'Address', es:'Dirección', ru:'Адрес', icon:'📍'},
+  {he:'זָכָר', say:'זכר', en:'Male', es:'Masculino', ru:'Мужской', icon:'♂️'},
+  {he:'נְקֵבָה', say:'נקבה', en:'Female', es:'Femenino', ru:'Женский', icon:'♀️'},
+  {he:'נָשׂוּי', say:'נשוי', en:'Married (man)', es:'Casado', ru:'Женат', icon:'💍', key:'married'},
+  {he:'רווק', say:'רווק', en:'Single / unmarried (man)', es:'Soltero', ru:'Холост', icon:'🧍', key:'single'},
+  {he:'גָּרוּשׁ', say:'גרוש', en:'Divorced (man)', es:'Divorciado', ru:'Разведён', icon:'📄', key:'divorced'},
+  {he:'אַלְמָן', say:'אלמן', en:'Widower', es:'Viudo', ru:'Вдовец', icon:'🕊️', key:'widower'},
+  {he:'עִיר', say:'עיר', en:'City', es:'Ciudad', ru:'Город', icon:'🏙️'},
+  {he:'קִישּׁוּר', say:'קישור', en:'Link', es:'Enlace', ru:'Ссылка', icon:'🔗'},
+  {he:'שְׁאֵלוֹן', say:'שאלון', en:'Questionnaire', es:'Cuestionario', ru:'Анкета', icon:'📝'}
+];
+const wordsEl = document.getElementById('words');
+const searchEl = document.getElementById('search');
+const statusEl = document.getElementById('sound-status');
+function illustrationFor(key){
+  const common = 'role="img" aria-label="איור לימודי" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 112"';
+  const art = {
+    tourist: `<svg ${common}><rect x="4" y="4" width="172" height="104" rx="16" fill="#e8f3ed"/><circle cx="90" cy="28" r="13" fill="#e8b18b"/><path d="M77 26q13-22 26 0" fill="#334c45"/><path d="M72 46q18-12 36 0l9 38H63z" fill="#2c7c72"/><rect x="59" y="49" width="15" height="34" rx="7" fill="#e0a55f"/><rect x="106" y="49" width="15" height="34" rx="7" fill="#e0a55f"/><path d="M76 84l-4 16M104 84l4 16" stroke="#344e47" stroke-width="8" stroke-linecap="round"/><path d="M115 54l20 17-6 8-20-17" fill="#fff" stroke="#6b8278" stroke-width="2"/><path d="M127 66l8 5-6 8-8-5z" fill="#d7e7df"/><circle cx="138" cy="24" r="11" fill="#f4cf72"/><path d="M138 16v16M130 24h16" stroke="#fff" stroke-width="2"/></svg>`,
+    street: `<svg ${common}><rect x="4" y="4" width="172" height="104" rx="16" fill="#e8f3ed"/><rect x="10" y="25" width="34" height="49" rx="2" fill="#d5e3dd"/><rect x="15" y="31" width="8" height="9" fill="#85b9ad"/><rect x="29" y="31" width="8" height="9" fill="#85b9ad"/><rect x="15" y="46" width="8" height="9" fill="#85b9ad"/><rect x="29" y="46" width="8" height="9" fill="#85b9ad"/><rect x="136" y="18" width="32" height="56" rx="2" fill="#e4c99a"/><rect x="142" y="26" width="8" height="9" fill="#85b9ad"/><rect x="154" y="26" width="8" height="9" fill="#85b9ad"/><rect x="142" y="42" width="8" height="9" fill="#85b9ad"/><rect x="154" y="42" width="8" height="9" fill="#85b9ad"/><path d="M48 108L75 48h30l27 60z" fill="#71817c"/><path d="M90 60v12m0 8v12m0 8v5" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M44 78h19l-8 30H36zM117 78h19l9 30h-19z" fill="#c7d9d1"/><path d="M15 88h22M143 88h22" stroke="#8fb0a2" stroke-width="3"/></svg>`,
+    married: `<svg ${common}><rect x="4" y="4" width="172" height="104" rx="16" fill="#fff2e8"/><circle cx="68" cy="32" r="12" fill="#e8b18b"/><path d="M56 29q12-20 24 0" fill="#334c45"/><path d="M52 48q16-9 32 0l7 32H45z" fill="#397d75"/><circle cx="112" cy="32" r="12" fill="#d99a70"/><path d="M100 29q12-19 24 0" fill="#72503f"/><path d="M96 48q16-9 32 0l7 32H89z" fill="#d68a67"/><path d="M78 73c-10-10-22 2-10 12l10 8 10-8c12-10 0-22-10-12z" fill="#d66c66"/><circle cx="78" cy="80" r="9" fill="none" stroke="#f5d36e" stroke-width="4"/><circle cx="92" cy="80" r="9" fill="none" stroke="#f5d36e" stroke-width="4"/></svg>`,
+    single: `<svg ${common}><rect x="4" y="4" width="172" height="104" rx="16" fill="#e8f3ed"/><circle cx="90" cy="29" r="14" fill="#e8b18b"/><path d="M76 27q14-23 28 0" fill="#334c45"/><path d="M68 48q22-12 44 0l9 36H59z" fill="#4c8e83"/><path d="M78 84l-5 16M102 84l5 16" stroke="#344e47" stroke-width="8" stroke-linecap="round"/><circle cx="132" cy="24" r="11" fill="#f4cf72"/><path d="M132 17v14M125 24h14" stroke="#fff" stroke-width="2"/><path d="M34 90h25" stroke="#91b6a7" stroke-width="4" stroke-linecap="round"/></svg>`,
+    divorced: `<svg ${common}><rect x="4" y="4" width="172" height="104" rx="16" fill="#f9eceb"/><circle cx="68" cy="31" r="13" fill="#e8b18b"/><path d="M55 29q13-21 26 0" fill="#334c45"/><path d="M52 48q16-10 32 0l7 37H45z" fill="#708c84"/><path d="M117 29c-10-13-24 0-12 13l12 11 12-11c12-13-2-26-12-13z" fill="#d95c61"/><path d="M116 25l-4 10 7 4-5 9" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M101 59l-8 8m0-8l8 8" stroke="#bd6868" stroke-width="2"/><path d="M98 81h34" stroke="#c9a8a5" stroke-width="3" stroke-linecap="round"/></svg>`,
+    widower: `<svg ${common}><rect x="4" y="4" width="172" height="104" rx="16" fill="#edf0ed"/><circle cx="68" cy="34" r="14" fill="#dba27d"/><path d="M54 32q14-18 28 0l-2 7H56z" fill="#a9b0ac"/><path d="M48 53q20-11 40 0l8 37H40z" fill="#687d76"/><rect x="111" y="20" width="39" height="47" rx="3" fill="#fff" stroke="#a7b8b0" stroke-width="3"/><rect x="117" y="26" width="27" height="35" rx="2" fill="#f5e3d9"/><circle cx="130" cy="37" r="7" fill="#dba27d"/><path d="M121 53q9-9 18 0" stroke="#b37b65" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M119 79c-7-8-17 1-8 9l8 7 8-7c9-8-1-17-8-9z" fill="#9aa9a2"/></svg>`
+  };
+  return art[key] || null;
+}
+function renderWords(){
+  wordsEl.replaceChildren();
+  for(const word of words){
+    const haystack = [word.he, word.say, word.en, word.es, word.ru].join(' ').toLocaleLowerCase();
+    if(!haystack.includes(searchEl.value.trim().toLocaleLowerCase())) continue;
+    const card = document.createElement('article');
+    card.className = 'word-card';
+    const button = document.createElement('button');
+    button.className = 'picture';
+    button.type = 'button';
+    button.setAttribute('aria-label', 'השמעת המילה ' + word.say);
+    button.addEventListener('click', () => speakHebrew(word.say));
+    const customArt = illustrationFor(word.key);
+    let icon;
+    if(customArt){
+      const holder = document.createElement('span');
+      holder.className = 'illustration';
+      holder.innerHTML = customArt;
+      icon = holder;
+    } else {
+      icon = document.createElement('span');
+      icon.className = 'emoji';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = word.icon;
+    }
+    const speaker = document.createElement('span');
+    speaker.className = 'speaker';
+    speaker.textContent = '🔊 לחצו לשמיעה';
+    button.append(icon, speaker);
+    const translations = document.createElement('div');
+    translations.className = 'translations';
+    const hebrew = document.createElement('div');
+    hebrew.className = 'hebrew';
+    hebrew.lang = 'he';
+    hebrew.dir = 'rtl';
+    hebrew.textContent = word.he;
+    translations.appendChild(hebrew);
+    for (const [label, value] of [['English',word.en],['Español',word.es],['Русский',word.ru]]){
+      const row = document.createElement('div');
+      const lang = document.createElement('span');
+      lang.className = 'lang';
+      lang.textContent = label;
+      const translation = document.createElement('span');
+      translation.textContent = value;
+      row.append(lang, translation);
+      translations.appendChild(row);
+    }
+    card.append(button, translations);
+    wordsEl.appendChild(card);
+  }
+}
+function speakHebrew(word){
+  if(!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)){
+    statusEl.textContent = 'הדפדפן הזה אינו תומך בהשמעת מילים. נסו לפתוח את הקישור ב-Chrome מעודכן או בטלפון.';
+    return;
+  }
+  try {
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    synth.resume();
+    const utterance = new SpeechSynthesisUtterance(word);
+    utterance.lang = 'he-IL';
+    utterance.rate = 0.78;
+    utterance.pitch = 1;
+    const chooseVoice = () => {
+      const voices = synth.getVoices();
+      const hebrewVoice = voices.find(v => (v.lang || '').toLowerCase() === 'he-il') || voices.find(v => (v.lang || '').toLowerCase().startsWith('he-')) || voices.find(v => (v.lang || '').toLowerCase() === 'he');
+      if(hebrewVoice) utterance.voice = hebrewVoice;
+      return Boolean(hebrewVoice);
+    };
+    const hasHebrewVoice = chooseVoice();
+    utterance.onstart = () => { statusEl.textContent = 'משמיעים: ' + word; };
+    utterance.onend = () => { statusEl.textContent = ''; };
+    utterance.onerror = (event) => {
+      statusEl.textContent = 'הדפדפן לא הצליח להשמיע את המילה. בדקו שהצליל פועל ונסו לפתוח את הקישור ב-Chrome או בטלפון.';
+    };
+    if(!hasHebrewVoice){
+      statusEl.textContent = 'מנסים להשמיע בעברית. אם לא נשמע קול, ייתכן שאין במכשיר קול עברי זמין.';
+    }
+    // A short delay after cancel() avoids a common browser speech queue issue.
+    window.setTimeout(() => {
+      try { synth.speak(utterance); }
+      catch(e) { statusEl.textContent = 'לא הצלחנו להפעיל שמע במכשיר הזה. נסו דפדפן מעודכן.'; }
+    }, 120);
+  } catch (error) {
+    statusEl.textContent = 'לא הצלחנו להפעיל שמע במכשיר הזה. נסו לפתוח את המילון בדפדפן מעודכן.';
+  }
+}
+document.getElementById('test-sound').addEventListener('click', () => speakHebrew('שלום'));
+searchEl.addEventListener('input', renderWords);
+if('speechSynthesis' in window){
+  window.speechSynthesis.onvoiceschanged = () => { /* Refresh voice list when available. */ };
+}
+renderWords();
+</script>
+</body>
+</html>
